@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
-import fragment from "./shader/fragment.glsl";
-import vertex from "./shader/vertexParticles.glsl";
+import fragment from "../js/shader/fragment.glsl";
+import vertex from "../js/shader/vertex.glsl";
 
 import GUI from "lil-gui";
 import gsap from "gsap";
@@ -11,12 +11,15 @@ import gsap from "gsap";
 // import obj1 from "../public/ob1.glb";
 // import obj2 from "../public/ob2.glb";
 // import obj3 from "../public/ob3.glb";
+import matcap from "../public/matcap2.png";
 
 import { REVISION } from "three";
 
 export default class Sketch {
   constructor(options) {
     this.scene = new THREE.Scene();
+
+    this.dummy = new THREE.Object3D();
 
     this.container = options.dom;
     this.width = this.container.offsetWidth;
@@ -31,14 +34,19 @@ export default class Sketch {
 
     this.container.appendChild(this.renderer.domElement);
 
-    this.camera = new THREE.PerspectiveCamera(
-      70,
-      this.width / this.height,
-      0.01,
+    let frustumSize = 4;
+    let aspect = window.innerWidth / window.innerHeight;
+
+    this.camera = new THREE.OrthographicCamera(
+      (frustumSize * aspect) / -2,
+      (frustumSize * aspect) / 2,
+      frustumSize / 2,
+      frustumSize / -2,
+      -1000,
       1000
     );
 
-    this.camera.position.set(0, 0, 4);
+    this.camera.position.set(8, 12, 16);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.time = 0;
 
@@ -88,6 +96,8 @@ export default class Sketch {
   }
 
   async addObjects() {
+    let that = this;
+
     this.material = new THREE.ShaderMaterial({
       extensions: {
         derivatives: "#extension GL_OES_standard_derivatives : enable",
@@ -95,9 +105,9 @@ export default class Sketch {
       side: THREE.DoubleSide,
       uniforms: {
         time: { value: 0 },
+        uMatcap: { value: new THREE.TextureLoader().load(matcap) },
         resolution: { value: new THREE.Vector4() },
       },
-
       vertexShader: vertex,
       fragmentShader: fragment,
     });
@@ -110,27 +120,56 @@ export default class Sketch {
     //   this.scene.add(gltf.scene);
     // });
 
-    let { scene: children } = await this.gltf.loadAsync("../public/ob1.glb");
+    let { scene: children1 } = await this.gltf.loadAsync("../public/ob1.glb");
+    let geo1 = children1.children[0].geometry;
 
-    console.log('children',children);
-    this.scene.add(this.plane);
+    let { scene: children2 } = await this.gltf.loadAsync("../public/ob2.glb");
+    let geo2 = children2.children[0].geometry;
+    let { scene: children3 } = await this.gltf.loadAsync("../public/ob3.glb");
+    let geo3 = children3.children[0].geometry;
+
+    let mat = new THREE.MeshMatcapMaterial({
+      matcap: new THREE.TextureLoader().load(matcap),
+    });
+
+    console.log(this.material);
+    const rows = 10;
+    this.count = rows * rows;
+    let random = new Float32Array(this.count);
+
+    this.instanced = new THREE.InstancedMesh(geo1, this.material, this.count);
+
+    let index = 0;
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < rows; j++) {
+        random[index] = Math.random();
+        this.dummy.position.set(i - rows / 2, -10, j - rows / 2);
+        this.dummy.updateMatrix();
+        this.instanced.setMatrixAt(index++, this.dummy.matrix);
+      }
+    }
+    this.instanced.instanceMatrix.needsUpdate = true;
+    this.instanced.geometry.setAttrubute()
+
+    console.log("geo1", geo1, geo2, geo3);
+    this.scene.add(this.instanced);
   }
 
-  addLigth() {
-    let light1 = new THREE.AmbientLight(0x666666, 0.5);
-    this.scene.add(light1);
+  // addLigth() {
+  //   let light1 = new THREE.AmbientLight(0x666666, 0.5);
+  //   this.scene.add(light1);
 
-    let light2 = new THREE.DirectionalLight(0x666666, 0.5);
-    light2.position.set(0.5, 0.5, 0.866);
-    this.scene.add(light2);
-  }
+  //   let light2 = new THREE.DirectionalLight(0x666666, 0.5);
+  //   light2.position.set(0.5, 0.5, 0.866);
+  //   this.scene.add(light2);
+  // }
   stop() {
     this.isPlaying = false;
   }
 
   render() {
     if (!this.isPlaying) return;
-    this.time += 0.05;
+    // this.time += 0.05;
     // this.material.uniforms.time.value = this.time;
     requestAnimationFrame(this.render.bind(this));
     this.renderer.render(this.scene, this.camera);

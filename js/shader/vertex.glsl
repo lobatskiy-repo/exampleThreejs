@@ -5,5 +5,12 @@ uniform vec2 pixels;
 float PI = 3.141592653589793238;
 void main() {
   vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-}
+
+  vec4 mvPosition = modelMatrix * instanceMatrix * vec4(position, 1.0);
+ 
+ 
+
+  mvPosition = viewMatrix * mvPosition;
+
+  gl_Position = projectionMatrix * mvPosition;
+ }

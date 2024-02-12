@@ -1,16 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<title>Document</title>
-	<style>
-		*{margin:0;padding:0} 
-		canvas{display: block}
-		#container{width: 100vw;height: 100vh}
+  <head>
+    <meta charset="UTF-8" />
+    <title>Document</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      canvas {
+        display: block;
+      }
+      #container {
+        width: 100vw;
+        height: 100vh;
+      }
     </style>
-</head>
-<body>
-	<div id="container"></div>
-	<script src="js/app.js" type="module"></script>
-</body>
+
+    <script id="vertexShader" type="x-shader/x-vertex">
+      uniform float time;
+      uniform vec2 resolution;
+      void main()	{
+      		gl_Position = vec4( position, 1.0 );
+      }
+    </script>
+
+    <script id="fragmentShader" type="x-shader/x-fragment">
+      uniform float time;
+      uniform vec2 resolution;
+      void main()	{
+      		float x = mod(time + gl_FragCoord.x, 20.) < 10. ? 1. : 0.;
+      		float y = mod(time + gl_FragCoord.y, 20.) < 10. ? 1. : 0.;
+      		gl_FragColor = vec4(vec3(min(x, y)), 1.);
+      }
+    </script>
+  </head>
+  <body>
+    <div id="container"></div>
+    <script src="js/app.js" type="module"></script>
+  </body>
 </html>
