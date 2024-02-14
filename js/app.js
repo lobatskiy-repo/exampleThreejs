@@ -12,6 +12,7 @@ import gsap from "gsap";
 // import obj2 from "../public/ob2.glb";
 // import obj3 from "../public/ob3.glb";
 import matcap from "../public/matcap2.png";
+import scan from "../public/scan.png";
 
 import { REVISION } from "three";
 
@@ -106,6 +107,7 @@ export default class Sketch {
       uniforms: {
         time: { value: 0 },
         uMatcap: { value: new THREE.TextureLoader().load(matcap) },
+        uScan: { value: new THREE.TextureLoader().load(scan) },
         resolution: { value: new THREE.Vector4() },
       },
       vertexShader: vertex,
@@ -148,8 +150,10 @@ export default class Sketch {
         this.instanced.setMatrixAt(index++, this.dummy.matrix);
       }
     }
+   console.log(' this.instanced.geometry', this.instanced.geometry);
+    
     this.instanced.instanceMatrix.needsUpdate = true;
-    this.instanced.geometry.setAttrubute()
+    this.instanced.geometry.setAttribute("aRandom",new THREE.InstancedBufferAttribute(random,1))
 
     console.log("geo1", geo1, geo2, geo3);
     this.scene.add(this.instanced);
@@ -169,8 +173,8 @@ export default class Sketch {
 
   render() {
     if (!this.isPlaying) return;
-    // this.time += 0.05;
-    // this.material.uniforms.time.value = this.time;
+    this.time += 0.01;
+    this.material.uniforms.time.value = this.time;
     requestAnimationFrame(this.render.bind(this));
     this.renderer.render(this.scene, this.camera);
   }
